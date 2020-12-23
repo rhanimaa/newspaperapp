@@ -1,0 +1,25 @@
+{%extends 'news/base.html'%}
+
+{% load static %}
+
+{%block content%}
+
+
+ <div class="container bg-light border mt-4">
+          <div class=" jumbotron d-flex"> 
+              <div>
+                <h1 class="h1 text-center"> <u>{{category.cat_type}} </u></h1>
+              </div> 
+          </div>                            
+         <h3> 
+           <a href="{% url 'news-home' %}"> Back </a>
+          </h3> 
+          <div class="card" style="width: 70rem;">
+                    {% for article in category.articles.all %}
+                   <h5 class="card-title"><u> {{article.title}}</u></h5>
+                    <p class="card-text"> {{article.body}} </p>
+                    {% endfor %}
+          </div>
+</div>
+
+{% endblock %}

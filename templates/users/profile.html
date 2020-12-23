@@ -1,0 +1,16 @@
+{% extends "news/base.html" %}
+
+<!-- put title here -->
+
+{% block content %}
+<div class="container-fluid">
+    <div class="media">
+        <img src="{{ user.profile.profile_pic.url }}" alt="profile image" class="rounded-circle profile_pic" style="width: 125px; height: 125px;">
+        <div class="media-body">
+            <h1 id="nav-thing">{{ user.username }}</h1>
+            <p>{{ user.email }}</p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

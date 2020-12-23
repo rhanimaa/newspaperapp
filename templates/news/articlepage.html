@@ -1,0 +1,300 @@
+{% extends "news/base.html" %}
+
+<!-- put title here -->
+
+{% block content %}
+
+    <div class="container-fluid">
+        <h1>{{ article.title }}</h1>
+                <div class="d-flex" >
+                 {% comment %} if the user is authenticated then display the like button and like count  {% endcomment %}
+                    {% if request.user.is_authenticated %}
+                        <div class="pr-2 float-left">  
+                      {% comment %} like count  {% endcomment %}
+                        <span class="" id="like_count">{{article.like_count}}</span>
+                      {% comment %} button like  {% endcomment %}
+                        <button class="btn btn-link text-dark p-0 border-0 btn-outline-light" id="like-button" value="{{article.id}}">
+                            <svg width="1.5em" height="1.5em" viewBox="0 0 16 16" class="bi bi-heart" fill="currentColor"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd"
+                                d="M8 2.748l-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z" />
+                            </svg>
+                        </button>
+                        </div>
+                    {% else %}
+                    {% comment %} otherwise, take them to the register page to register  {% endcomment %}
+                            <div class="pr-2">
+                            <span class="" id="like_count">{{article.like_count}}</span>
+                            <a href="{% url 'register' %}" id="href" class="btn btn-link text-dark p-0 border-0 btn-outline-light"
+                                value="{{article.id}}">
+                                <svg width="1.5em" height="1.5em" viewBox="0 0 16 16" class="bi bi-heart" fill="currentColor"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd"d="M8 2.748l-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z" />
+                                </svg>
+                            </a>
+                            </div>
+                    {% endif %}
+                </div>
+
+        <img src="{{ article.image.url }}" alt="{{ article.title }} image" style="width: 50em;">
+        <p>{{ article.date_pub }}</p>
+        <span id="getting_articleid" data-value="{{article.id}}">
+                <p>{{ article.body }}</p>
+        </span>
+
+        <!-- Comment System -->
+            <div class="col-md-8">
+
+            {% load mptt_tags %}
+            <div class="allcommments">
+                {% recursetree allcomments %}
+                    <div id="{{ node.id }}" class="my-2 p-2">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                            By {{ node.author }}
+                            </div>
+                            {{ node.publishdate }}
+                        </div>
+
+                    <div class="node-content">{{ node.content }}</div>
+
+                    <div class="d-flex flex-row-reverse">
+                        {% if node.level < 3 %}
+                        <button class="btn btn-success btn-sm" onclick="myFunction({{ node.id }})">Reply</button>
+                        {% endif %}
+                        {% if node.author|stringformat:"s" == user.get_username  %}
+                        <button class="btn btn-danger btn-sm mr-2" onclick="deleteComment({{ node.id }})">Delete</button>
+                        <button type="button" id="{{node.id}}"  class="btn btn-primary btn-edit btn-sm mr-2" data-toggle="modal" data-target="#editModal"> Edit </button>
+                        {% endif %}
+                    </div>
+                    <hr />
+                    </div>
+                    {% if not node.is_leaf_node %}
+                    <div class="children pl-2 pl-md-5">
+                    {{ children }}
+                    </div>
+                    {% endif %}
+                {% endrecursetree %}
+            </div>
+           
+        <form id="commentform" class="commentform" method="post" value="{{article.id}}">
+            {%csrf_token%}
+            {% with allcomments.count as total_comments %}
+            <p> 
+                {{total_comments}} comments  
+            </p>
+            {% endwith %}
+
+            <select name="article" class="d-none" id="id_article">
+            <option value="{{article.id}}" selected="{{article.id}}"> </option>
+            </select> 
+
+            <label class="small font-weight-bold"> {{comment_form.label}} </label>
+            {{comment_form.parent}}
+
+            <div class="d-flex">
+                {{comment_form.content}}
+            </div>
+            <div class="d-flex flex-row-reverse">
+                <button value="commentform" id="newcomment" type="submit" class="newcomment btn btn-primary">Submit </button>
+            </div>
+        </form>
+
+        <!-- Button trigger modal -->
+            <!-- Modal -->
+            <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Comment title</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editName">
+                        {% csrf_token %}
+                            <div class="form-group">
+                            <label for="name">name</label>
+                            <input type="text" id ="commentname" name ="commentname"class="form-control" id="edit-name" aria-describedby="nameHelp" placeholder="Edit your comment ">
+                            <small id="nameHelp" class="form-text text-muted">Edit your comment </small>
+                            </div>                           
+                            <button class="editbutton" id="formid" commentid="" value="submit" class="btn btn-primary">Submit</button> 
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+</div>
+
+{% endblock %}
+
+{%block scripts%}
+<script>
+        //Post comments and reply
+        $(document).on('click', '#newcomment, #newcommentinner', function (e) {
+            e.preventDefault();
+
+            var button = $(this).attr("value");
+            var placeholder_comment = "commentform"
+            if (button == "newcommentform") {
+            var placeholder_comment = "newcommentform"
+            }
+            $.ajax({
+            type: 'POST',
+            url: '{% url "addcomment" %}',
+            data: $("#" + button).serialize(),
+            cache: false,
+            success: function (json) {
+                console.log(json)
+                $('<div id="" class="my-2 p-2" style="border: 2px solid grey"> \
+                <div class="d-flex justify-content-between">By ' + json['user'] + '<div></div>Posted: Now!</div> \
+                <div>' + json['result'] + '</div> \
+                <hr> \
+                </div>').insertBefore('#' + placeholder_comment);
+
+                $('.commentform').trigger("reset");
+                formExit()
+
+            },
+            error: function (xhr, errmsg, err) {
+                // console.log(JSON.stringify(err));
+            }
+            });
+        })
+
+        function formExit(e) {
+            e.preventDefault();
+            document.getElementById("newcommentform").remove();
+            $("#newcommentform").remove();
+        }
+
+        function deleteComment(id) {
+            console.log(id)
+            $.ajax({
+            type: 'POST',
+            url: '{% url "addcomment" %}',
+            data: {
+                nodeid: id,
+                action: 'delete',
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+            },
+            success: function (json) {
+                //test console
+                console.log(json)
+                $("#" + json['remove']).remove();
+            },
+            error: function (xhr, errmsg, err) {}
+            });
+        }
+
+        function myFunction(id) {
+            if (document.contains(document.getElementById("newcommentform"))) {
+            document.getElementById("newcommentform").remove();
+            }
+            //var articleid = document.getElementById('commentform').value;
+            var articleid = document.getElementById('getting_articleid').getAttribute('data-value');
+            var commentID = document.getElementById(id);
+            commentID.insertAdjacentHTML('afterend',
+            '<form id="newcommentform" class="commentform" method="post"> \
+                {% csrf_token %} \
+                <select name="article" class="d-none" id="id_article"> \
+                <option value="' + articleid + '" selected="' + articleid + '"></option> \
+                </select> <label class="small font-weight-bold"></label> \
+                <select name="parent" class="d-none" id="id_parent"> \
+                <option value="' + id + '" selected="' + id + '"></option> \
+                </select> \
+                <div class="d-flex"> \
+                <textarea name="content" cols="40" rows="1" class="ml-3 mb-3 form-control border-0 comment-add rounded-0" placeholder="Add a public comment" required="" id="id_content"></textarea> \
+                </div> \
+                <div class="d-flex flex-row-reverse"> \
+                <button type="button" class="btn btn-outline-secondary" onclick="formExit()">Close</button> \
+                <button value="newcommentform" id="newcommentinner" type="submit" class="mr-1 newcomment btn btn-primary ">Submit</button> \
+                </div> \
+            </form>'
+            );
+        } 
+
+
+
+        //Reset form on page reload
+        $('.commentform').trigger("reset");
+
+
+    //like button 
+        $(document).on('click', '#like-button', function (e) {
+            e.preventDefault();
+            $.ajax({
+            type: 'POST',
+            url: '{% url "like" %}',  // go to like url 
+            data: {
+                articleid: $('#like-button').val(),
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                action: 'post'
+            },
+            success: function (json) {
+                document.getElementById("like_count").innerHTML = json['result']
+            },
+            error: function (xhr, errmsg, err) {
+
+            }
+            });
+        })
+
+        //editbutton 
+        var comment_id; 
+            // get the comment from the edit form
+        $(document).on("click", ".btn-edit", function(){
+              $("#edit-name").val($(this).attr('name'))
+              comment_id=$(this).attr('id')
+              $("#formid").attr("commentid", comment_id)
+              console.log("Changing comment ID " + comment_id)
+          })
+        $("#formid").click(function (event) {
+            event.preventDefault()
+            console.log($(this).attr("commentid"))
+            console.log("TEST")
+            editComment($(this).attr("commentid"))
+        })
+        function editComment(id) {
+                    console.log("TEST 1 ");
+                    console.log(id)
+                    console.log("TEST...2");
+                  //get the comment using the id of the edit form 
+                    var commentname = $('#commentname').val(); 
+                    console.log(commentname)
+                    console.log(comment_id)
+                    $.ajax({
+                            method :"PUT",
+                            url: "{% url 'editcomment' 0 %}".replace("0", comment_id),
+                             data: {
+                                nodeid: id,
+                                commentname:commentname,
+                                action: 'put',
+                                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                                dataType: "json"
+                            },
+                            success : function(data){
+                               // console.log("commentid", comment_id, "commentname", commentname)
+                                if(data.status == 1){
+                                    location.reload()
+                                }
+                                if(data.status==0){
+                                    alert("failed")
+                                }
+
+                            },
+                            error: function(jqXHR, textStatus, errorThrown){
+                            alert("Ajax request failed" + textStatus + ' ' + errorThrown)
+                            }
+                        })
+                    }
+                
+    </script>
+
+{% endblock %}
